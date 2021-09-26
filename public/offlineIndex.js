@@ -2,163 +2,59 @@
 //We need to create a database for INDEXDB to store values on your localhost.
 
 let localDB;
+const request = indexedDB.open("offlineBudget",1);
+const incomingTransaction =  "pending";
 
-// Lets open up a indexedDb version of the Mongo database
-// This function is imported from indexedDb.js
-checkForIndexedDb();
+request.onupgradedneed = event => {
 
+  //set the local to the target
+  localDB = event.target.result;
+  // Check to see if the event is being read
+  console.log(event);
 
-// This is the offline version of the index.js//
-document.querySelector("#add-btn").onclick = function() {
-    sendTransaction(true);
-  };
-  
-  document.querySelector("#sub-btn").onclick = function() {
-    sendTransaction(false);
-  };
-
-let transactions = [];
-let myChart;
-
-fetch("/api/transaction")
-  .then(response => {
-    return response.json();
-  })
-  .then(data => {
-    // save db data on global variable
-    transactions = data;
-
-    populateTotal();
-    populateTable();
-    populateChart();
-  });
-
-function populateTotal() {
-  // reduce transaction amounts to a single total value
-  let total = transactions.reduce((total, t) => {
-    return total + parseInt(t.value);
-  }, 0);
-
-  let totalEl = document.querySelector("#total");
-  totalEl.textContent = total;
 }
 
-function populateTable() {
-  let tbody = document.querySelector("#tbody");
-  tbody.innerHTML = "";
-
-  transactions.forEach(transaction => {
-    // create and populate a table row
-    let tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${transaction.name}</td>
-      <td>${transaction.value}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-}
-
-function populateChart() {
-  // copy array and reverse it
-  let reversed = transactions.slice().reverse();
-  let sum = 0;
-
-  // create date labels for chart
-  let labels = reversed.map(t => {
-    let date = new Date(t.date);
-    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-  });
-
-  // create incremental values for chart
-  let data = reversed.map(t => {
-    sum += parseInt(t.value);
-    return sum;
-  });
-
-  // remove old chart if it exists
-  if (myChart) {
-    myChart.destroy();
+//This code checks if offline requests are good.
+request.onsuccess = event => {
+  console.log("Offline Request is a success");
+  if (navigator.onLine) {
+    checkDB();
   }
+}
 
-  let ctx = document.getElementById("myChart").getContext("2d");
+request.onerror = event => {
+  console.log("Offline Request has failed");
+  console.log("Offline error code" + event);
+}
 
-  myChart = new Chart(ctx, {
-    type: 'line',
-      data: {
-        labels,
-        datasets: [{
-            label: "Total Over Time",
-            fill: true,
-            backgroundColor: "#6666ff",
-            data
-        }]
+function checkDB() {
+  const openTransaction = localDB.transaction([incomingTransaction], 'readwrite');
+  const storeTransaction = openTransaction.objectStore(incomingTransaction);
+  const retreiveTransaction = storeTransaction.getAll();
+
+  retreiveTransaction.onsuccess = () => {
+    if (getAll.result.length > 0) {
+      fetch('/api/transaction/bulk', {
+        method: 'POST',
+        body: JSON.stringify(retreiveTransaction.result),
+        headers: {
+            Accept: 'application/json, text/plain, */*', 
+            'Content-Type': 'application/json'
+        },
+      }).then((response) => {
+        openTransaction = localDB.transaction("pending", "readwrite");
+        storeTransaction = openTransaction.objectStore(incomingTransaction);
+        storeTransaction.clear();
+
+      });
     }
-  });
+  }
 }
 
-function sendTransaction(isAdding) {
-  let nameEl = document.querySelector("#t-name");
-  let amountEl = document.querySelector("#t-amount");
-  let errorEl = document.querySelector(".form .error");
-
-  // validate form
-  if (nameEl.value === "" || amountEl.value === "") {
-    errorEl.textContent = "Missing Information";
-    return;
-  }
-  else {
-    errorEl.textContent = "";
-  }
-
-  // create record
-  let transaction = {
-    name: nameEl.value,
-    value: amountEl.value,
-    date: new Date().toISOString()
-  };
-
-  // if subtracting funds, convert amount to negative number
-  if (!isAdding) {
-    transaction.value *= -1;
-  }
-
-  // add to beginning of current array of data
-  transactions.unshift(transaction);
-
-  // re-run logic to populate ui with new record
-  populateChart();
-  populateTable();
-  populateTotal();
+function saveRecord(record) {
+  const openTransaction = localDB.transaction(incomingTransaction, "readwrite");
+  const storeTransaction = openTransaction.objectStore("pending");
+  storeTransaction.add(record);
   
-  // Send to index.db
 
-  useIndexedDb("budget","transactions", "POST", transaction);
-//   fetch("/api/transaction", {
-//     method: "POST",
-//     body: JSON.stringify(transaction),
-//     headers: {
-//       Accept: "application/json, text/plain, */*",
-//       "Content-Type": "application/json"
-//     }
-//   })
-//   .then(response => {    
-//     return response.json();
-//   })
-//   .then(data => {
-//     if (data.errors) {
-//       errorEl.textContent = "Missing Information";
-//     }
-//     else {
-//       // clear form
-//       nameEl.value = "";
-//       amountEl.value = "";
-//     }
-//   })
-//   .catch(err => {
-//     // fetch failed, so save in indexed db
-//     saveRecord(transaction);
-
-//     // clear form
-//     nameEl.value = "";
-//     amountEl
+}
