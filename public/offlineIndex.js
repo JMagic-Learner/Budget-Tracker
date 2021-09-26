@@ -10,7 +10,7 @@ const pendingObjectStoreName = `pending`;
 // const request = indexedDB.open("offlineBudget",1);
 // const incomingTransaction =  "pending";
 
-const request = indexedDB.open(`budget`, 2);
+const request = indexedDB.open(`budget`, 1);
 
 
 // request.onupgradedneed = event => {
