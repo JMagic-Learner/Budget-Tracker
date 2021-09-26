@@ -1,16 +1,23 @@
 
 //We need to create a database for INDEXDB to store values on your localhost.
 
-let localDB;
+
 const request = indexedDB.open("offlineBudget",1);
 const incomingTransaction =  "pending";
 
 request.onupgradedneed = event => {
-
+  const localDB = request.result;
   //set the local to the target
-  localDB = request.result;
+  localDB.creatObjectStore(incomingTransaction, {
+    keyPath: "id",
+    autoincrement: true
+  });
+  
+
   // Check to see if the event is being read
+  console.log("onUpgraded");
   console.log(event);
+
 
 }
 
@@ -33,6 +40,10 @@ function checkDB() {
   const storeTransaction = openTransaction.objectStore(incomingTransaction);
   const retreiveTransaction = storeTransaction.getAll();
 
+    if(localDB) {
+      console.log("Local DB has been detected in checkDB");
+    }
+
   retreiveTransaction.onsuccess = () => {
     if (getAll.result.length > 0) {
       fetch('/api/transaction/bulk', {
@@ -43,7 +54,7 @@ function checkDB() {
             'Content-Type': 'application/json'
         },
       }).then((response) => {
-        openTransaction = localDB.transaction("pending", "readwrite");
+        transaction = localDB.transaction("pending", "readwrite");
         storeTransaction = openTransaction.objectStore(incomingTransaction);
         storeTransaction.clear();
 
