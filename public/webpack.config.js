@@ -3,8 +3,10 @@ const path = require('path');
 
 const config = {
   entry: {
-   
     indexedDB: './offlineRoutes/indexedDb.js',
+    index: './index.js',
+    service: './service-worker.js',
+    styles: 'styles.css',
     offlineIndex: './offlineRoutes/offlineIndex.js',
   },
   output: {
