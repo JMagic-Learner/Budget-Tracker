@@ -29,7 +29,7 @@ request.onerror = event => {
 
 function checkDB() {
   const localDB = request.result;
-  const openTransaction = localDB.transactions([incomingTransaction], 'readwrite');
+  const openTransaction = localDB.transaction([incomingTransaction], 'readwrite');
   const storeTransaction = openTransaction.objectStore(incomingTransaction);
   const retreiveTransaction = storeTransaction.getAll();
 
@@ -43,7 +43,7 @@ function checkDB() {
             'Content-Type': 'application/json'
         },
       }).then((response) => {
-        openTransaction = localDB.transactions("pending", "readwrite");
+        openTransaction = localDB.transaction("pending", "readwrite");
         storeTransaction = openTransaction.objectStore(incomingTransaction);
         storeTransaction.clear();
 
@@ -53,7 +53,7 @@ function checkDB() {
 }
 
 function saveRecord(record) {
-  const openTransaction = localDB.transactions(incomingTransaction, "readwrite");
+  const openTransaction = localDB.transaction(incomingTransaction, "readwrite");
   const storeTransaction = openTransaction.objectStore("pending");
   storeTransaction.add(record);
   
