@@ -8,7 +8,7 @@ const incomingTransaction =  "pending";
 request.onupgradedneed = event => {
 
   //set the local to the target
-  localDB = event.target.result;
+  localDB = request.result;
   // Check to see if the event is being read
   console.log(event);
 
@@ -28,7 +28,8 @@ request.onerror = event => {
 }
 
 function checkDB() {
-  const openTransaction = localDB.transaction([incomingTransaction], 'readwrite');
+  const localDB = request.result;
+  const openTransaction = localDB.transactions([incomingTransaction], 'readwrite');
   const storeTransaction = openTransaction.objectStore(incomingTransaction);
   const retreiveTransaction = storeTransaction.getAll();
 
@@ -42,7 +43,7 @@ function checkDB() {
             'Content-Type': 'application/json'
         },
       }).then((response) => {
-        openTransaction = localDB.transaction("pending", "readwrite");
+        openTransaction = localDB.transactions("pending", "readwrite");
         storeTransaction = openTransaction.objectStore(incomingTransaction);
         storeTransaction.clear();
 
@@ -52,9 +53,11 @@ function checkDB() {
 }
 
 function saveRecord(record) {
-  const openTransaction = localDB.transaction(incomingTransaction, "readwrite");
+  const openTransaction = localDB.transactions(incomingTransaction, "readwrite");
   const storeTransaction = openTransaction.objectStore("pending");
   storeTransaction.add(record);
   
 
 }
+
+window.addEventListener('online', checkDB);
